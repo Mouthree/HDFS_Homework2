@@ -212,6 +212,7 @@
 <pre><code class="language-shell">vim one.sh
 </code></pre>
 <p>进入之后输入如下内容</p>
+<p><strong>注意</strong>:先按<code>i</code>进入输入模式再粘贴代码,粘贴之后按<code>esc</code>退出输入模式,之后输入<code>:wq</code>来保存并退出,之后每一道题的操作都一样,不再赘述</p>
 <pre><code class="language-bash">#!/bin/bash
 export JAVA_HOME=/usr/lib/jvm/jdk1.8.0_162
 export JRE_HOME=${JAVA_HOME}/jre
@@ -224,7 +225,7 @@ read -p "input your file name: " my_file
 if hdfs dfs -test -e "$my_dir/$my_file"; then
     echo "file already exists, what do you want to do: "
     read -p  "add/cover (a/c)" user_input
-    if [ "$user_input" -eq "a" ]; then
+    if [ "$user_input" == "a" ]; then
         hdfs dfs -appendToFile "$my_d$my_file" "$my_dir$my_file"
         echo "add success"
     else
