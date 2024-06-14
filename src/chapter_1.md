@@ -64,6 +64,7 @@ vim one.sh
 
 **注意**:先按`i`进入输入模式再粘贴代码,粘贴之后按`esc`退出输入模式,之后输入`:wq`来保存并退出,之后每一道题的操作都一样,不再赘述
 
+
 ```bash
 #!/bin/bash
 export JAVA_HOME=/usr/lib/jvm/jdk1.8.0_162
