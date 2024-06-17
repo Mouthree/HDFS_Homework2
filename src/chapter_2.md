@@ -832,54 +832,78 @@ public class thirteen {
 
 ## 1
 
-
+<video controls src="code_1.mp4" title="Title"></video>
 
 ---
 
 ## 2
 
+<video controls src="code_2.mp4" title="Title"></video>
+
 ---
 
 ## 3
+
+<video controls src="code_3.mp4" title="Title"></video>
 
 ---
 
 ## 4
 
+<video controls src="code_4.mp4" title="Title"></video>
+
 ---
 
 ## 5
+
+<video controls src="code_5.mp4" title="Title"></video>
 
 ---
 
 ## 6
 
+<video controls src="code_6.mp4" title="Title"></video>
+
 ---
 
 ## 7
+
+<video controls src="code_7.mp4" title="Title"></video>
 
 ---
 
 ## 8
 
+<video controls src="code_8.mp4" title="Title"></video>
+
 ---
 
 ## 9
+
+实现和之前一样,不讲了
 
 ---
 
 ## 10
 
+同上
+
 ---
 
 ## 11
+
+<video controls src="code_11.mp4" title="Title"></video>
 
 ---
 
 ## 12
 
+<video controls src="code_12.mp4" title="Title"></video>
+
 ---
 
 ## 13
+
+<video controls src="code_13.mp4" title="Title"></video>
 
 ---
