@@ -173,7 +173,753 @@
 
                 <div id="content" class="content">
                     <main>
-                        
+                        <h1 id="hdfs_java"><a class="header" href="#hdfs_java">HDFS_java</a></h1>
+<h2 id="先开hadoop"><a class="header" href="#先开hadoop">先开Hadoop</a></h2>
+<pre><code class="language-shell">cd /usr/local/hadoop
+./sbin/start-dfs.sh #启动hadoop
+</code></pre>
+<h2 id="之后在本地再新建一个文件"><a class="header" href="#之后在本地再新建一个文件">之后在本地再新建一个文件</a></h2>
+<pre><code class="language-shell">vim hdfs_java.txt
+</code></pre>
+<p>进入之后按<code>i</code>开始编辑, 按<code>esc</code>退出编辑, 输入<code>:wq</code>保存并退出</p>
+<hr />
+<h2 id="1向hdfs中存入文件如果有则选择追加还是覆盖"><a class="header" href="#1向hdfs中存入文件如果有则选择追加还是覆盖"><code>(1)</code>向HDFS中存入文件,如果有则选择追加还是覆盖</a></h2>
+<p>进入eclipse</p>
+<pre><code class="language-shell">cd /usr/local/eclipse
+./eclipse 
+</code></pre>
+<h2 id="点击查看如何新建项目"><a class="header" href="#点击查看如何新建项目"><a href="#%E5%85%B3%E4%BA%8E%E5%A6%82%E4%BD%95%E5%88%9B%E5%BB%BAhdfs%E9%A1%B9%E7%9B%AE">点击查看如何新建项目</a></a></h2>
+<p>在项目中写入如下代码</p>
+<pre><code class="language-java">import java.io.IOException;
+import java.util.Scanner;
+import org.apache.hadoop.fs.FSDataOutputStream;
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.fs.Path;
+import java.io.FileReader;
+import java.io.BufferedReader;
+
+public class one {
+	public static void main(String[] args) throws Exception {
+		Scanner scanner = new Scanner(System.in);
+		System.out.println("input local address");
+		String file_address = scanner.nextLine();
+		System.out.println("input file name");
+		String file_name = scanner.nextLine();
+		System.out.println("input folder address");
+		String folder_address = scanner.nextLine();
+		one m = new one();
+		m.upload_file(file_address, file_name, folder_address);
+		scanner.close();
+	}
+	
+	public void upload_file(String file_address, String file_name, String folder_address) throws Exception {
+		Configuration conf = new Configuration();
+		conf.set("fs.defaultFS","hdfs://localhost:9000");
+        conf.set("fs.hdfs.impl","org.apache.hadoop.hdfs.DistributedFileSystem");
+        conf.set("dfs.client.block.write.replace-datanode-on-failure.policy", "NEVER");
+        conf.setBoolean("dfs.client.block.write.replace-datanode-on-failure.enable", true);
+        FileSystem fs = FileSystem.get(conf);
+        Path local_file = new Path(file_address + "/" + file_name);
+        Path over_file = new Path(folder_address);
+        
+        if (fs.exists(new Path(folder_address + "/" + file_name))) {
+            System.out.println("The file is already there");
+            System.out.println("Choose append or overwrite  |  (a, o)");
+            Scanner scanner = new Scanner(System.in);
+            String t = scanner.nextLine();
+            if(t.equals("a")) {
+            	BufferedReader br = null;
+            	FSDataOutputStream out = fs.append(new Path(folder_address + "/" + file_name));
+            	br = new BufferedReader(new FileReader(file_address + "/" + file_name));
+                String line;
+                while ((line = br.readLine()) != null) {
+                    out.writeBytes(line + "\n");
+                }
+                out.close();
+                br.close();
+                System.out.println("successfully append");
+            }else if(t.equals("o")) {
+            	fs.copyFromLocalFile(local_file, over_file);
+            	System.out.println("successfully overwrite");
+            }
+            scanner.close();
+        } else {
+        	fs.copyFromLocalFile(local_file, over_file);
+        	System.out.println("OK");
+        }
+        fs.close();
+	}
+}
+</code></pre>
+<h3 id="流程"><a class="header" href="#流程">流程</a></h3>
+<ol>
+<li>
+<p>首先输入要<code>上传的文件</code>的<code>本地路径</code></p>
+</li>
+<li>
+<p>接着输入要上传的文件名, 要带后缀</p>
+</li>
+<li>
+<p>最后输入要传入的hdfs的路径</p>
+</li>
+<li>
+<p>新开一个命令行窗口, <em>直接右键之前打开的,然后点击新建即可</em></p>
+</li>
+<li>
+<p>输入<code>cd /usr/local/hadoop</code>进入hadoop文件夹, 接着输入<code>hdfs dfs -cat /user/fileTest/hdfs_java.txt</code>来查看操作是否成功,成功了则会显示文件内容</p>
+</li>
+<li>
+<p>第一次上传会直接结束,再次运行程序会提示覆盖还是追加,根据文本提示操作</p>
+</li>
+</ol>
+<h3 id="实机演示"><a class="header" href="#实机演示">实机演示</a></h3>
+<p><video controls src="hdfs_1.mp4" title="Title"></video></p>
+<h3 id="代码详解"><a class="header" href="#代码详解"><a href="">代码详解</a></a></h3>
+<hr />
+<h2 id="2从hdfs上下载文件到本地如果重名则重命名再下载"><a class="header" href="#2从hdfs上下载文件到本地如果重名则重命名再下载"><code>(2)</code>从HDFS上下载文件到本地,如果重名则重命名再下载</a></h2>
+<p>首先创建文件二</p>
+<p>输入如下代码</p>
+<pre><code class="language-java">import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.fs.Path;
+import java.io.BufferedOutputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.util.Scanner;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+public class two {
+	public static void main(String[] args) throws Exception {
+		Scanner scanner = new Scanner(System.in);
+		System.out.println("input folder address");
+		String folder_address = scanner.nextLine();
+		System.out.println("input file name");
+		String file_name = scanner.nextLine();
+		System.out.println("input local address");
+		String file_address = scanner.nextLine();
+		two m = new two();
+		m.download_file_local(file_address, file_name, folder_address);
+		scanner.close();
+	}
+	
+	public void download_file_local(String file_address, String file_name, String folder_address) throws Exception {
+		Configuration conf = new Configuration();
+		conf.set("fs.defaultFS","hdfs://localhost:9000");
+        conf.set("fs.hdfs.impl","org.apache.hadoop.hdfs.DistributedFileSystem");
+        conf.set("dfs.client.block.write.replace-datanode-on-failure.policy", "NEVER");
+        conf.setBoolean("dfs.client.block.write.replace-datanode-on-failure.enable", true);
+        FileSystem fs = FileSystem.get(conf);
+        Path local_address = new Path(file_address);
+        Path hdfs_file = new Path(folder_address + "/" + file_name);
+        if(Files.exists(Paths.get(file_address + "/" + file_name))) {
+        	System.out.println("The file is already there");
+        	System.out.println("input new file name");
+        	Scanner scanner = new Scanner(System.in);
+        	String new_file_name = scanner.nextLine();
+        	Path new_local = new Path(file_address + "/" + new_file_name);
+        	fs.copyToLocalFile(false, hdfs_file, new_local, true);
+        	scanner.close();
+        	System.out.println("successfully download");
+        }else {
+        	fs.copyToLocalFile(false, hdfs_file, local_address, true);
+        	System.out.println("OK");
+        }
+	}
+}
+</code></pre>
+<h3 id="流程-1"><a class="header" href="#流程-1">流程</a></h3>
+<ol>
+<li>
+<p>在上一部新建的命令行窗口中输入<code>rm -f hdfs_java.txt</code>来删除之前创建的文件,由于在实验一中我们上传了一个文件到hdfs中,所以不用担心文件没了</p>
+</li>
+<li>
+<p>输入<code>ls</code>查看是否删除成功</p>
+</li>
+<li>
+<p>首先输入要下载的文件在hdfs中的文件夹</p>
+</li>
+<li>
+<p>输入要下载到本地的文件名</p>
+</li>
+<li>
+<p>输入要下载到本地的路径</p>
+</li>
+<li>
+<p>再次来到之前新建的命令行窗口中,输入<code>ls</code>查看本地文件内容是否下载成功</p>
+</li>
+<li>
+<p>再次运行代码, 根据提示输入新的文件名,再次按照<code>上一步</code>操作,可以看到重命名的文件</p>
+</li>
+</ol>
+<h3 id="实机演示-1"><a class="header" href="#实机演示-1">实机演示</a></h3>
+<p><video controls src="hdfs_2.mp4" title="Title"></video></p>
+<h3 id="代码详解-1"><a class="header" href="#代码详解-1"><a href="">代码详解</a></a></h3>
+<hr />
+<h2 id="3将hdfs中指定文件的内容输出到终端中"><a class="header" href="#3将hdfs中指定文件的内容输出到终端中"><code>(3)</code>将HDFS中指定文件的内容输出到终端中</a></h2>
+<pre><code class="language-java">import java.util.Scanner;
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.fs.Path;
+import java.io.BufferedReader;
+import org.apache.hadoop.fs.FSDataInputStream;
+import java.io.InputStreamReader;
+public class three {
+	public static void main(String[] args) throws Exception {
+		System.out.println("input hdfs file address");
+		Scanner scanner = new Scanner(System.in);
+		String hdfsFilePath = scanner.nextLine();
+		Configuration conf = new Configuration();
+		conf.set("fs.defaultFS","hdfs://localhost:9000");
+        conf.set("fs.hdfs.impl","org.apache.hadoop.hdfs.DistributedFileSystem");
+        conf.set("dfs.client.block.write.replace-datanode-on-failure.policy", "NEVER");
+        conf.setBoolean("dfs.client.block.write.replace-datanode-on-failure.enable", true);
+        FileSystem fs = FileSystem.get(conf);
+        Path hdfsPath = new Path(hdfsFilePath);
+        FSDataInputStream in = fs.open(hdfsPath);
+        BufferedReader br = new BufferedReader(new InputStreamReader(in));
+        String line;
+        while ((line = br.readLine()) != null) {
+        	System.out.println(line);
+        }
+        br.close();
+        in.close();
+        System.out.println("");
+        System.out.println("----------------------");
+        System.out.println("successfully out");
+        scanner.close();
+	}
+}
+</code></pre>
+<h3 id="流程-2"><a class="header" href="#流程-2">流程</a></h3>
+<ol>
+<li>
+<p>按照提示输入要显示的文件在hdfs中的路径</p>
+</li>
+<li>
+<p>直接运行即可</p>
+</li>
+</ol>
+<h3 id="实机演示-2"><a class="header" href="#实机演示-2">实机演示</a></h3>
+<p><video controls src="hdfs_3.mp4" title="Title"></video></p>
+<h3 id="代码详解-2"><a class="header" href="#代码详解-2"><a href="">代码详解</a></a></h3>
+<hr />
+<h2 id="4显示hdfs中指定的文件的读写权限大小创建时间路径等"><a class="header" href="#4显示hdfs中指定的文件的读写权限大小创建时间路径等"><code>(4)</code>显示HDFS中指定的文件的读写权限、大小、创建时间、路径等</a></h2>
+<pre><code class="language-java">import java.util.Scanner;
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.fs.FileStatus;
+public class four {
+	public static void main(String[] args) throws Exception {
+		System.out.println("input hdfs file address");
+		Scanner scanner = new Scanner(System.in);
+		String hdfsFilePath = scanner.nextLine();
+		Configuration conf = new Configuration();
+		conf.set("fs.defaultFS","hdfs://localhost:9000");
+        conf.set("fs.hdfs.impl","org.apache.hadoop.hdfs.DistributedFileSystem");
+        conf.set("dfs.client.block.write.replace-datanode-on-failure.policy", "NEVER");
+        conf.setBoolean("dfs.client.block.write.replace-datanode-on-failure.enable", true);
+        FileSystem fs = FileSystem.get(conf);
+        Path hdfsPath = new Path(hdfsFilePath);
+        FileStatus fileStatus = fs.getFileStatus(hdfsPath);
+        System.out.println("file address: " + fileStatus.getPath());
+        System.out.println("file size: " + fileStatus.getLen() + " 字节");
+        System.out.println("block size: " + fileStatus.getBlockSize() + " 字节");
+        System.out.println("number of copies: " + fileStatus.getReplication());
+        System.out.println("user: " + fileStatus.getOwner());
+        System.out.println("grouping: " + fileStatus.getGroup());
+        System.out.println("permission: " + fileStatus.getPermission());
+        System.out.println("change time: " + fileStatus.getModificationTime());
+        System.out.println("visit time: " + fileStatus.getAccessTime());
+        scanner.close();
+	}
+}
+
+</code></pre>
+<h3 id="流程-3"><a class="header" href="#流程-3">流程</a></h3>
+<ol>
+<li>按照提示输入要显示的文件在hdfs中的路径</li>
+</ol>
+<h3 id="实机演示-3"><a class="header" href="#实机演示-3">实机演示</a></h3>
+<p><video controls src="hdfs_4.mp4" title="Title"></video></p>
+<h3 id="代码详解-3"><a class="header" href="#代码详解-3"><a href="">代码详解</a></a></h3>
+<hr />
+<h2 id="5给定hdfs中某一个目录输出该目录下的所有文件的读写权限大小创建时间路径等信息如果该文件是目录则递归输出该目录下所有文件相关信息"><a class="header" href="#5给定hdfs中某一个目录输出该目录下的所有文件的读写权限大小创建时间路径等信息如果该文件是目录则递归输出该目录下所有文件相关信息"><code>(5)</code>给定HDFS中某一个目录，输出该目录下的所有文件的读写权限、大小、创建时间、路径等信息，如果该文件是目录，则递归输出该目录下所有文件相关信息</a></h2>
+<pre><code class="language-java">import java.util.Scanner;
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.fs.FileStatus;
+public class five {
+	public static void main(String[] args) throws Exception {
+		System.out.println("input hdfs file address");
+		Scanner scanner = new Scanner(System.in);
+		String hdfsFilePath = scanner.nextLine();
+		Configuration conf = new Configuration();
+		conf.set("fs.defaultFS","hdfs://localhost:9000");
+        conf.set("fs.hdfs.impl","org.apache.hadoop.hdfs.DistributedFileSystem");
+        conf.set("dfs.client.block.write.replace-datanode-on-failure.policy", "NEVER");
+        conf.setBoolean("dfs.client.block.write.replace-datanode-on-failure.enable", true);
+        FileSystem fs = FileSystem.get(conf);
+        Path hdfsPath = new Path(hdfsFilePath);
+        FileStatus[] fileStatuses = fs.listStatus(hdfsPath);
+        for (FileStatus fileStatus : fileStatuses) {
+	        System.out.println("file address: " + fileStatus.getPath());
+	        System.out.println("file size: " + fileStatus.getLen() + " 字节");
+	        System.out.println("block size: " + fileStatus.getBlockSize() + " 字节");
+	        System.out.println("number of copies: " + fileStatus.getReplication());
+	        System.out.println("user: " + fileStatus.getOwner());
+	        System.out.println("grouping: " + fileStatus.getGroup());
+	        System.out.println("permission: " + fileStatus.getPermission());
+	        System.out.println("change time: " + fileStatus.getModificationTime());
+	        System.out.println("visit time: " + fileStatus.getAccessTime());
+	        System.out.println("");
+	        System.out.println("---------------------");
+	        System.out.println("");
+        }
+        scanner.close();
+	}
+}
+</code></pre>
+<h3 id="流程-4"><a class="header" href="#流程-4">流程</a></h3>
+<ol>
+<li>按照提示输入文件夹路径</li>
+</ol>
+<h3 id="实机演示-4"><a class="header" href="#实机演示-4">实机演示</a></h3>
+<p><video controls src="hdfs_5.mp4" title="Title"></video></p>
+<h3 id="代码详解-4"><a class="header" href="#代码详解-4"><a href="">代码详解</a></a></h3>
+<hr />
+<h2 id="6提供文件路径对其创建或删除创建时自动创建路径"><a class="header" href="#6提供文件路径对其创建或删除创建时自动创建路径"><code>(6)</code>提供文件路径,对其创建或删除,创建时自动创建路径</a></h2>
+<pre><code class="language-java">import java.util.Scanner;
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.fs.Path;
+
+public class six {
+	public static void main(String[] args) throws Exception {
+		System.out.println("input hdfs file address");
+		Scanner scanner = new Scanner(System.in);
+		String hdfsFilePath = scanner.nextLine();
+		Configuration conf = new Configuration();
+		conf.set("fs.defaultFS","hdfs://localhost:9000");
+        conf.set("fs.hdfs.impl","org.apache.hadoop.hdfs.DistributedFileSystem");
+        conf.set("dfs.client.block.write.replace-datanode-on-failure.policy", "NEVER");
+        conf.setBoolean("dfs.client.block.write.replace-datanode-on-failure.enable", true);
+        FileSystem fs = FileSystem.get(conf);
+        Path file_address = new Path(hdfsFilePath);
+        System.out.println("delete or create | (d/c)");
+        String input_choose = scanner.nextLine();
+        if(input_choose.equals("d")) {
+        	if(fs.exists(new Path(hdfsFilePath))) {
+        		fs.delete(file_address, true);
+        		System.out.println("successfully delete");
+        	}else {
+        		System.out.println("no file");
+        	}
+        }else if(input_choose.equals("c")) {
+        	fs.create(file_address, true, fs.getConf().getInt("io.file.buffer.size", 4096));
+        	System.out.println("OK");
+        }
+        scanner.close();
+	}
+}
+</code></pre>
+<h3 id="流程-5"><a class="header" href="#流程-5">流程</a></h3>
+<ol>
+<li>按照提示输入<strong>hdfs</strong>中的文件路径,根据文本提示操作</li>
+</ol>
+<h3 id="实机演示-5"><a class="header" href="#实机演示-5">实机演示</a></h3>
+<p><video controls src="hdfs_6-1.mp4" title="Title"></video></p>
+<h3 id="代码详解-5"><a class="header" href="#代码详解-5"><a href="">代码详解</a></a></h3>
+<hr />
+<h2 id="7hdfs创建或删除目录创建时如果没有就自动新建删除时如果目录不为空则问用户"><a class="header" href="#7hdfs创建或删除目录创建时如果没有就自动新建删除时如果目录不为空则问用户"><code>(7)</code>HDFS创建或删除目录,创建时如果没有就自动新建,删除时如果目录不为空则问用户</a></h2>
+<pre><code class="language-java">import java.util.Scanner;
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.fs.FileStatus;
+
+public class seven {
+	public static void main(String[] args) throws Exception {
+		System.out.println("input hdfs file address");
+		Scanner scanner = new Scanner(System.in);
+		String hdfsFilePath = scanner.nextLine();
+		Configuration conf = new Configuration();
+		conf.set("fs.defaultFS","hdfs://localhost:9000");
+        conf.set("fs.hdfs.impl","org.apache.hadoop.hdfs.DistributedFileSystem");
+        conf.set("dfs.client.block.write.replace-datanode-on-failure.policy", "NEVER");
+        conf.setBoolean("dfs.client.block.write.replace-datanode-on-failure.enable", true);
+        FileSystem fs = FileSystem.get(conf);
+        Path file_address = new Path(hdfsFilePath);
+        System.out.println("delete or create | (d/c)");
+        String input_choose = scanner.nextLine();
+        if(input_choose.equals("d")) {
+        	if(fs.exists(new Path(hdfsFilePath))) {
+        		FileStatus[] fileStatuses = fs.listStatus(file_address);
+        		if(fileStatuses.length == 0) {
+        			fs.delete(file_address, true);
+        			System.out.println("successfully delete");
+        		}else {
+        			System.out.println("This folder is not empty, do you want to delete? (y/n)");
+        			String t = scanner.nextLine();
+        			if(t.equals("y")) {
+        				fs.delete(file_address, true);
+        				System.out.println("successfully delete");
+        			}else {
+        				System.out.println("OK");
+        			}
+        		}
+        	}else {
+        		System.out.println("no file");
+        	}
+        }else if(input_choose.equals("c")) {
+        	fs.create(file_address, true, fs.getConf().getInt("io.file.buffer.size", 4096));
+        	System.out.println("OK");
+        }
+        scanner.close();
+	}
+}
+
+</code></pre>
+<h3 id="流程-6"><a class="header" href="#流程-6">流程</a></h3>
+<ol start="0">
+<li>懒得写了,直接看<code>实机演示</code>, 后面的几个也都一样</li>
+</ol>
+<h3 id="实机演示-6"><a class="header" href="#实机演示-6">实机演示</a></h3>
+<p><video controls src="HDFS_7.mp4" title="Title"></video></p>
+<h3 id="代码详解-6"><a class="header" href="#代码详解-6"><a href="">代码详解</a></a></h3>
+<hr />
+<h2 id="8向hdfs中指定文件追加内容由用户指定内容追加到原有文件开头或结尾"><a class="header" href="#8向hdfs中指定文件追加内容由用户指定内容追加到原有文件开头或结尾"><code>(8)</code>向HDFS中指定文件追加内容，由用户指定内容追加到原有文件开头或结尾</a></h2>
+<pre><code class="language-java">import java.util.Scanner;
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.fs.Path;
+import java.io.OutputStream;
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
+import org.apache.hadoop.io.IOUtils;
+public class eight {
+	public static void main(String[] args) throws Exception {
+		System.out.println("input hdfs file address");
+		Scanner scanner = new Scanner(System.in);
+		String hdfsFilePath = scanner.nextLine();
+		Configuration conf = new Configuration();
+		conf.set("fs.defaultFS","hdfs://localhost:9000");
+        conf.set("fs.hdfs.impl","org.apache.hadoop.hdfs.DistributedFileSystem");
+        conf.set("dfs.client.block.write.replace-datanode-on-failure.policy", "NEVER");
+        conf.setBoolean("dfs.client.block.write.replace-datanode-on-failure.enable", true);
+        FileSystem fs = FileSystem.get(conf);
+        Path file_address = new Path(hdfsFilePath);
+        if(fs.exists(new Path(hdfsFilePath))) {
+        	System.out.println("add head or tail | (h/t)");
+        	String t = scanner.nextLine();
+        	if(t.equals("h")) {
+        		System.out.println("input what you want add");
+        		String a = scanner.nextLine();
+        		OutputStream out = fs.create(new Path(hdfsFilePath.replace(".", "_mouthree" + ".")));
+        		out.write(a.getBytes());
+        		out.write("\n".getBytes());
+        		BufferedReader reader = new BufferedReader(new InputStreamReader(fs.open(new Path(hdfsFilePath))));
+        		while ((a = reader.readLine()) != null) {
+                    out.write(a.getBytes());
+                    out.write("\n".getBytes());
+                }
+        		IOUtils.closeStream(reader);
+                IOUtils.closeStream(out);
+                fs.delete(new Path(hdfsFilePath), true);
+                fs.rename(new Path(hdfsFilePath.replace(".", "_mouthree" + ".")), new Path(hdfsFilePath));
+                System.out.println("OK");
+        	}else {
+        		OutputStream out = fs.append(file_address);
+        		System.out.println("input what you want add");
+        		String a = scanner.nextLine();
+        		out.write(a.getBytes());
+        		out.write("\n".getBytes());
+        		out.close();
+        		System.out.println("OK");
+        	}
+        }else {
+        	System.out.println("no file");
+        }
+        scanner.close();
+	}
+}
+</code></pre>
+<h3 id="流程-7"><a class="header" href="#流程-7">流程</a></h3>
+<h3 id="实机演示-7"><a class="header" href="#实机演示-7">实机演示</a></h3>
+<p><video controls src="HDFS_8.mp4" title="Title"></video></p>
+<h3 id="代码详解-7"><a class="header" href="#代码详解-7"><a href="">代码详解</a></a></h3>
+<hr />
+<h2 id="9删除hdfs中指定的文件"><a class="header" href="#9删除hdfs中指定的文件"><code>(9)</code>删除HDFS中指定的文件</a></h2>
+<pre><code class="language-java">
+import java.util.Scanner;
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.fs.Path;
+
+public class nine {
+	public static void main(String[] args) throws Exception {
+		System.out.println("input hdfs file address");
+		Scanner scanner = new Scanner(System.in);
+		String hdfsFilePath = scanner.nextLine();
+		Configuration conf = new Configuration();
+		conf.set("fs.defaultFS","hdfs://localhost:9000");
+        conf.set("fs.hdfs.impl","org.apache.hadoop.hdfs.DistributedFileSystem");
+        conf.set("dfs.client.block.write.replace-datanode-on-failure.policy", "NEVER");
+        conf.setBoolean("dfs.client.block.write.replace-datanode-on-failure.enable", true);
+        FileSystem fs = FileSystem.get(conf);
+        if(fs.exists(new Path(hdfsFilePath))) {
+        	fs.delete(new Path(hdfsFilePath), true);
+        	System.out.println("OK");
+        }else {
+        	System.out.println("no file");
+        }
+        scanner.close();
+	}
+}
+
+</code></pre>
+<h3 id="流程-8"><a class="header" href="#流程-8">流程</a></h3>
+<h3 id="实机演示-8"><a class="header" href="#实机演示-8">实机演示</a></h3>
+<p><video controls src="hdfs_9.mp4" title="Title"></video></p>
+<h3 id="代码详解-8"><a class="header" href="#代码详解-8"><a href="">代码详解</a></a></h3>
+<hr />
+<h2 id="10删除hdfs中指定目录由用户指定目录中如果存在文件时是否删除目录"><a class="header" href="#10删除hdfs中指定目录由用户指定目录中如果存在文件时是否删除目录"><code>(10)</code>删除HDFS中指定目录，由用户指定目录中如果存在文件时是否删除目录</a></h2>
+<pre><code class="language-java">import java.util.Scanner;
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.FileStatus;
+import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.fs.Path;
+public class ten {
+	public static void main(String[] args) throws Exception {
+		System.out.println("input hdfs file address");
+		Scanner scanner = new Scanner(System.in);
+		String hdfsFilePath = scanner.nextLine();
+		Configuration conf = new Configuration();
+		conf.set("fs.defaultFS","hdfs://localhost:9000");
+        conf.set("fs.hdfs.impl","org.apache.hadoop.hdfs.DistributedFileSystem");
+        conf.set("dfs.client.block.write.replace-datanode-on-failure.policy", "NEVER");
+        conf.setBoolean("dfs.client.block.write.replace-datanode-on-failure.enable", true);
+        FileSystem fs = FileSystem.get(conf);
+        Path file_address = new Path(hdfsFilePath);
+		if(fs.exists(new Path(hdfsFilePath))) {
+    		FileStatus[] fileStatuses = fs.listStatus(file_address);
+    		if(fileStatuses.length == 0) {
+    			fs.delete(file_address, true);
+    			System.out.println("successfully delete");
+    		}else {
+    			System.out.println("This folder is not empty, do you want to delete? (y/n)");
+    			String t = scanner.nextLine();
+    			if(t.equals("y")) {
+    				fs.delete(file_address, true);
+    				System.out.println("successfully delete");
+    			}else {
+    				System.out.println("OK");
+    			}
+    		}
+    	}else {
+    		System.out.println("no file");
+    	}
+		scanner.close();
+	}
+}
+</code></pre>
+<h3 id="流程-9"><a class="header" href="#流程-9">流程</a></h3>
+<h3 id="实机演示-9"><a class="header" href="#实机演示-9">实机演示</a></h3>
+<p>同第七题,直接输入要删除的文件夹名就行</p>
+<h3 id="代码详解-9"><a class="header" href="#代码详解-9"><a href="">代码详解</a></a></h3>
+<hr />
+<h2 id="11在hdfs中将文件从源路径移动到目的路径"><a class="header" href="#11在hdfs中将文件从源路径移动到目的路径"><code>(11)</code>在HDFS中，将文件从源路径移动到目的路径</a></h2>
+<pre><code class="language-java">import java.util.Scanner;
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.fs.Path;
+
+public class eleven {
+	public static void main(String[] args) throws Exception {
+		System.out.println("input hdfs file address");
+		Scanner scanner = new Scanner(System.in);
+		String hdfsFilePath = scanner.nextLine();
+		System.out.println("input where you want move");
+		String hdfsOverPath = scanner.nextLine();
+		Configuration conf = new Configuration();
+		conf.set("fs.defaultFS","hdfs://localhost:9000");
+        conf.set("fs.hdfs.impl","org.apache.hadoop.hdfs.DistributedFileSystem");
+        conf.set("dfs.client.block.write.replace-datanode-on-failure.policy", "NEVER");
+        conf.setBoolean("dfs.client.block.write.replace-datanode-on-failure.enable", true);
+        FileSystem fs = FileSystem.get(conf);
+        Path file_address = new Path(hdfsFilePath);
+        Path file_over_address = new Path(hdfsOverPath);
+        if(fs.exists(file_address) &amp;&amp; fs.exists(file_over_address)) {
+        	if(fs.rename(file_address, file_over_address)) {
+        		System.out.println("successfully move");
+        	}else {
+        		System.out.println("ERROR");
+        	}
+        }else {
+        	System.out.println("some folder is not in there");
+        }
+        scanner.close();
+	}
+}
+
+</code></pre>
+<h3 id="流程-10"><a class="header" href="#流程-10">流程</a></h3>
+<h3 id="实机演示-10"><a class="header" href="#实机演示-10">实机演示</a></h3>
+<p><video controls src="hdfs_11.mp4" title="Title"></video></p>
+<h3 id="代码详解-10"><a class="header" href="#代码详解-10"><a href="">代码详解</a></a></h3>
+<hr />
+<h2 id="12实现按行读取一次返回一行如果空则返回-空"><a class="header" href="#12实现按行读取一次返回一行如果空则返回-空"><code>(12)</code>实现按行读取,一次返回一行,如果空则返回 "空"</a></h2>
+<h3 id="注意该实验需要创建两个class"><a class="header" href="#注意该实验需要创建两个class">注意:该实验需要创建<code>两个</code>class</a></h3>
+<h3 id="twelvejava的内容"><a class="header" href="#twelvejava的内容">twelve.java的内容</a></h3>
+<pre><code class="language-java">import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.FileSystem;
+import java.io.IOException;
+import java.util.Scanner;
+
+public class twelve {
+	public static void main(String[] args) throws IOException {
+		System.out.println("input hdfs file address");
+		Scanner scanner = new Scanner(System.in);
+		String hdfsFilePath = scanner.nextLine();
+		Configuration conf = new Configuration();
+		conf.set("fs.defaultFS","hdfs://localhost:9000");
+        conf.set("fs.hdfs.impl","org.apache.hadoop.hdfs.DistributedFileSystem");
+        conf.set("dfs.client.block.write.replace-datanode-on-failure.policy", "NEVER");
+        conf.setBoolean("dfs.client.block.write.replace-datanode-on-failure.enable", true);
+        FileSystem fs = FileSystem.get(conf);
+        MyFSDataInputStream.cat(fs, hdfsFilePath);
+        System.out.println("-----------------");
+        System.out.println("");
+        System.out.println("OK");
+        scanner.close();
+	}
+}
+</code></pre>
+<h3 id="myfsdatainputstream的内容"><a class="header" href="#myfsdatainputstream的内容">MyFSDataInputStream的内容</a></h3>
+<pre><code class="language-java">import org.apache.hadoop.fs.FSDataInputStream;
+import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.fs.Path;
+import java.io.*;
+
+public class MyFSDataInputStream extends FSDataInputStream {
+
+	public MyFSDataInputStream(InputStream in) {
+		super(in);
+		// TODO Auto-generated constructor stub
+	}
+	
+	public static String readline(BufferedReader br) throws IOException {
+		char[] data = new char[1024];
+		int off = 0;
+		while (br.read(data, off, 1) != -1) {
+			if (String.valueOf(data[off]).equals("\n") ) {
+				off += 1;
+				break;
+			}		
+			off += 1;
+		}
+		if (off&gt; 0) {
+			return String.valueOf(data);
+		} else {
+			return null;
+		}
+	}
+	public static void cat(FileSystem fs, String FilePath) throws IOException {
+		Path remotePath = new Path(FilePath);
+		FSDataInputStream in = fs.open(remotePath);
+		BufferedReader br = new BufferedReader(new InputStreamReader(in));
+		String line = null;
+		while ( (line = MyFSDataInputStream.readline(br)) != null ) {
+			System.out.println(line);
+		}
+		br.close();
+		in.close();
+		fs.close();
+	}
+}
+</code></pre>
+<h3 id="流程-11"><a class="header" href="#流程-11">流程</a></h3>
+<h3 id="实机演示-11"><a class="header" href="#实机演示-11">实机演示</a></h3>
+<p><video controls src="hdfs_12.mp4" title="Title"></video></p>
+<h3 id="代码详解-11"><a class="header" href="#代码详解-11"><a href="">代码详解</a></a></h3>
+<hr />
+<h2 id="13用javaneturl和orgapachehadoopfsfsurlstreamhandlerfactory编程完成输出hdfs中指定文件的文本到终端中"><a class="header" href="#13用javaneturl和orgapachehadoopfsfsurlstreamhandlerfactory编程完成输出hdfs中指定文件的文本到终端中"><code>(13)</code>用<code>java.net.URL</code>和<code>org.apache.hadoop.fs.FsURLStreamHandlerFactory</code>编程完成输出HDFS中指定文件的文本到终端中</a></h2>
+<pre><code class="language-java">import java.io.IOException;
+import java.util.Scanner;
+import java.net.URL;
+import org.apache.hadoop.conf.Configuration;
+import java.io.InputStream;
+import org.apache.hadoop.io.IOUtils;
+import org.apache.hadoop.fs.FsUrlStreamHandlerFactory;
+
+public class thirteen {
+	static{
+        URL.setURLStreamHandlerFactory(new FsUrlStreamHandlerFactory());
+    }
+	public static void main(String[] args) throws IOException {
+		System.out.println("input hdfs file address");
+		Scanner scanner = new Scanner(System.in);
+		String hdfsFilePath = scanner.nextLine();
+		Configuration conf = new Configuration();
+		conf.set("fs.defaultFS","hdfs://localhost:9000");
+        conf.set("fs.hdfs.impl","org.apache.hadoop.hdfs.DistributedFileSystem");
+        conf.set("dfs.client.block.write.replace-datanode-on-failure.policy", "NEVER");
+        conf.setBoolean("dfs.client.block.write.replace-datanode-on-failure.enable", true);
+        InputStream in = new URL("hdfs://localhost:9000" + hdfsFilePath).openStream();
+        IOUtils.copyBytes(in, System.out, 2048,false);
+        IOUtils.closeStream(in);
+        scanner.close();
+        System.out.println("-----------------");
+        System.out.println("");
+        System.out.println("OK");
+	}
+}
+</code></pre>
+<h3 id="流程-12"><a class="header" href="#流程-12">流程</a></h3>
+<h3 id="实机演示-12"><a class="header" href="#实机演示-12">实机演示</a></h3>
+<p><video controls src="hdfs_13.mp4" title="Title"></video></p>
+<h3 id="代码详解-12"><a class="header" href="#代码详解-12"><a href="">代码详解</a></a></h3>
+<hr />
+<hr />
+<h1 id="附录一--一些基础操作"><a class="header" href="#附录一--一些基础操作">附录一 : 一些基础操作</a></h1>
+<h2 id="关于如何创建hdfs项目"><a class="header" href="#关于如何创建hdfs项目">关于如何创建HDFS项目</a></h2>
+<p>在进入eclipse之后,按照如下视频操作</p>
+<p><video controls src="java_f_1.mp4" title="Title"></video></p>
+<p>实验几,命名就叫几,例如实验二, 项目名字叫<code>HDFS_2</code>, 类名叫<code>two</code></p>
+<hr />
+<hr />
+<h1 id="附录二--代码逻辑分析"><a class="header" href="#附录二--代码逻辑分析">附录二 : 代码逻辑分析</a></h1>
+<h2 id="1"><a class="header" href="#1">1</a></h2>
+<hr />
+<h2 id="2"><a class="header" href="#2">2</a></h2>
+<hr />
+<h2 id="3"><a class="header" href="#3">3</a></h2>
+<hr />
+<h2 id="4"><a class="header" href="#4">4</a></h2>
+<hr />
+<h2 id="5"><a class="header" href="#5">5</a></h2>
+<hr />
+<h2 id="6"><a class="header" href="#6">6</a></h2>
+<hr />
+<h2 id="7"><a class="header" href="#7">7</a></h2>
+<hr />
+<h2 id="8"><a class="header" href="#8">8</a></h2>
+<hr />
+<h2 id="9"><a class="header" href="#9">9</a></h2>
+<hr />
+<h2 id="10"><a class="header" href="#10">10</a></h2>
+<hr />
+<h2 id="11"><a class="header" href="#11">11</a></h2>
+<hr />
+<h2 id="12"><a class="header" href="#12">12</a></h2>
+<hr />
+<h2 id="13"><a class="header" href="#13">13</a></h2>
+<hr />
+
                     </main>
 
                     <nav class="nav-wrapper" aria-label="Page navigation">
